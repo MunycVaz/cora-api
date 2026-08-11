@@ -12,11 +12,22 @@ const HOSTS = {
   prod:  'matls-clients.api.cora.com.br',
 };
 
+/* Remonta um PEM no formato correto mesmo que as quebras de linha
+   tenham sido perdidas ao colar no painel (vira 1 linha só),
+   ou que venham como \n escapado, ou como base64 puro (DER). */
 function pem(v) {
   if (!v) return v;
-  v = v.trim();
-  if (v.indexOf('BEGIN') !== -1) return v.replace(/\\n/g, '\n');
-  try { return Buffer.from(v, 'base64').toString('utf8'); } catch (e) { return v; }
+  v = String(v).trim().replace(/\\n/g, '\n');
+  if (v.indexOf('BEGIN') === -1) {
+    // sem cabeçalho PEM: tenta base64 (DER) -> texto
+    try { return Buffer.from(v, 'base64').toString('utf8'); } catch (e) { return v; }
+  }
+  const m = v.match(/-----BEGIN ([A-Za-z0-9 ]+)-----([\s\S]*?)-----END \1-----/);
+  if (!m) return v; // formato inesperado: devolve como está
+  const label = m[1].trim();
+  const body = m[2].replace(/[^A-Za-z0-9+/=]/g, ''); // só base64
+  const lines = body.match(/.{1,64}/g) || [];
+  return '-----BEGIN ' + label + '-----\n' + lines.join('\n') + '\n-----END ' + label + '-----\n';
 }
 
 function httpReq(opts, body) {
