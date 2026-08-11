@@ -1,0 +1,7 @@
+# Sitezinho de API do sistema Rotta & Trust — funções de conexão bancária.
+# NÃO é o site principal (o site principal continua sendo o rotta-trust, com o index.html do sistema).
+[build]
+  publish = "."
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
